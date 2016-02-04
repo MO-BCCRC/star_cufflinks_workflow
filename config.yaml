@@ -1,0 +1,312 @@
+__PIPELINE_INFO__: 
+    name: 'star_cufflinks'
+    version: '1.0'
+    author: 'jtaghiyar@bccrc.ca'
+    data_type: 
+    input_type: 'fastq'
+    output_type: 'bam, gtf, fpkm'
+    host_cluster: 
+    date_created: '2015-08-14'
+    date_last_updated: 'Sep 3, 2015 by jtaghiyar@bccrc.ca'
+    factory_version: '1.12.0'
+__GENERAL__: 
+    star_binary: 'path to STAR executable'
+    star_fusion_binary: 'path to STAR-Fusion executable'
+    samtools: 'path to samtools executable'
+__SHARED__: 
+    cufflinks_bin: 'path to cufflinks bin directory'
+    frag_bias_correct: 'path to reference fasta'
+    gene_reference_annotation_gtf: 'reference annotation file in gtf format'
+    gene_reference_star_fusion_cdna: 'path to cdna reference file made and used by SART-Fusion'
+    star_genome_index_dir: 'path to the genom index directory made and used by STAR'
+    ld_library_path: 'path(s) to export to LD_LIBRARY_PATH env variable'
+    library_type: 'name of a library type used by Cufflinks'
+    multi_read_correct: 'True/False'
+    perl5lib: 'path(s) to export to PERL5LIB env variable'
+__SAMPLES__:
+    # sample_id:
+    #    fastq_reads: 'list of fastq files, e.g. ["path/to/fastq_left", "path/to/fastq_right"]'
+__TASK_STAR_ALIGNER__: 
+    reserved: 
+        # do not change this section.
+        component_name: 'run_star_aligner'
+        component_version: '1.0.0'
+        seed_version: '2.4.2a'
+    run: 
+        # NOTE: component cannot run in parallel mode.
+        use_cluster: True
+        memory: '20G'
+        num_cpus: 1
+        forced_dependencies: []
+        add_breakpoint: False
+        env_vars: 
+        boilerplate: 
+    component: 
+        input_files: 
+            genome_dir: ('__SHARED__', 'star_genome_index_dir')
+            fastq_reads: ('__SAMPLES__', 'fastq_reads')
+            annotation_gtf_file: 
+        output_files: 
+            output_prefix: 'star/${sample_id}_'
+            tmp_out_dir: 'star/tmp_out_dir'
+        parameters: 
+            unmapped_reads: 
+            filter_junctions: RemoveNoncanonicalUnannotated
+            chim_out_type: 
+            max_mem_sort: 
+            decompress_cmd: 
+            num_threads: 
+            unmapped_reads_within_outSAM: 
+            derive_strand: intronMotif
+            max_mem: 
+            read_length: 
+            chr_prefix: 
+            min_chim_seg_size: 12
+            genome_load: 
+            output_type: 'BAM Unsorted'
+            two_pass_mode: 
+__TASK_STAR_FUSION__:
+    reserved: 
+        # do not change this section.
+        component_name: 'run_star_fusion'
+        component_version: '1.0.0'
+        seed_version: '0.4.0'
+    run: 
+        # NOTE: component cannot run in parallel mode.
+        use_cluster: True
+        memory: '15G'
+        num_cpus: 1
+        forced_dependencies: ['__TASK_STAR_ALIGNER__']
+        add_breakpoint: False
+        env_vars: 
+            PERL5LIB: ('__SHARED__', 'perl5lib') 
+        boilerplate: 
+    component: 
+        input_files: 
+            ref_gtf_file: ('__SHARED__', 'gene_reference_annotation_gtf')
+            ref_cdna_file: ('__SHARED__', 'gene_reference_star_fusion_cdna')
+            chimeric_junction: 'star/TASK_STAR_ALIGNER_${sample_id}_Chimeric.out.junction'
+        output_files: 
+            output_prefix: 'star_fusion/${sample_id}_'
+            tmp_out_dir: 'star_fusion/tmp_dir'
+        parameters: 
+            verbose_level: 
+            min_alt_pct_junction: 
+            max_promiscuity: 
+            aggregate_novel_junction_dist: 
+            e_value_threshold: 
+            min_novel_junction_support: 
+            min_junction_reads: 
+            no_blast_filter: 
+            min_sum_frags: 
+__TASK_SAMTOOLS_SORT_1__: 
+    reserved:
+        # do not change this section.
+        component_name: 'run_samtools_sort'
+        component_version: '1.0.0'
+        seed_version: '0.1.19'
+    run:
+        use_cluster: True
+        memory: '15G'
+        num_cpus: 1
+        forced_dependencies: ['__TASK_STAR_ALIGNER__']
+        add_breakpoint: False
+        env_vars:
+            LD_LIBRARY_PATH: ('__SHARED__','ld_library_path')
+        boilerplate:
+        parallel_run: False
+        parallel_params: []
+        interval_file:
+    component:
+        input_files:
+            input: 'star/TASK_STAR_ALIGNER_${sample_id}_Aligned.out.bam'
+        output_files:
+            output: 'samtools_sort/${sample_id}_sort.bam'
+        parameters:
+            options: ' -n -m 6000000000'
+__TASK_SAMTOOLS_FIXMATE__: 
+    reserved:
+        # do not change this section.
+        component_name: 'run_samtools_fixmate'
+        component_version: '1.0.0'
+        seed_version: '0.1.19'
+    run:
+        use_cluster: True
+        memory: '15G'
+        num_cpus: 1
+        forced_dependencies: []
+        add_breakpoint: False
+        env_vars:
+            LD_LIBRARY_PATH: ('__SHARED__','ld_library_path')
+        boilerplate:
+        parallel_run: False
+        parallel_params: []
+        interval_file: 
+    component:
+        input_files:
+            input: ('__TASK_SAMTOOLS_SORT_1__','output')
+        output_files:
+            output: 'samtools_fixmate/${sample_id}_fixmate.bam'
+        parameters:
+
+__TASK_SAMTOOLS_SORT_2__:
+    reserved:
+        # do not change this section.
+        component_name: 'run_samtools_sort'
+        component_version: '1.0.0'
+        seed_version: '0.1.19'
+    run:
+        use_cluster: True
+        memory: '15G'
+        num_cpus: 1
+        forced_dependencies: []
+        add_breakpoint: False
+        env_vars:
+            LD_LIBRARY_PATH: ('__SHARED__','ld_library_path')
+        boilerplate:
+        parallel_run: False
+        parallel_params: []
+        interval_file:
+    component:
+        input_files:
+            input: ('__TASK_SAMTOOLS_FIXMATE__','output')
+        output_files:
+            output: 'samtools_sort/${sample_id}_sort.bam'
+        parameters:
+            options: ' -m 6000000000'
+
+__TASK_SAMTOOLS_RMDUP__:
+    reserved:
+        # do not change this section.
+        component_name: 'run_samtools_rmdup'
+        component_version: '1.0.0'
+        seed_version: '0.1.19'
+    run:
+        use_cluster: True
+        memory: '5G'
+        num_cpus: 1
+        forced_dependencies: []
+        add_breakpoint: False
+        env_vars:
+            LD_LIBRARY_PATH: ('__SHARED__','ld_library_path')
+        boilerplate:
+        parallel_run: False
+        parallel_params: []
+        interval_file:
+    component:
+        input_files:
+            input: ('__TASK_SAMTOOLS_SORT_2__','output')
+        output_files:
+            output: 'results/${sample_id}_star_fixmate_sort_rmdup.bam'
+        parameters:
+            options:
+__TASK_SAMTOOLS_INDEX__:
+    reserved:
+        # do not change this section.
+        component_name: 'run_samtools_index'
+        component_version: '1.0.0'
+        seed_version: '0.1.19'
+    run:
+        use_cluster: True
+        memory: '5G'
+        num_cpus: 1
+        forced_dependencies: []
+        add_breakpoint: False
+        env_vars:
+            LD_LIBRARY_PATH: ('__SHARED__','ld_library_path')
+        boilerplate:
+        parallel_run: False
+        parallel_params: []
+        interval_file:
+    component:
+        input_files:
+            input: ('__TASK_SAMTOOLS_RMDUP__','output')
+        output_files:
+            output:
+        parameters:
+
+__TASK_SAMTOOLS_FLAGSTAT__:
+    reserved:
+        # do not change this section.
+        component_name: 'run_samtools_flagstat'
+        component_version: '1.0.0'
+        seed_version: '0.1.19'
+    run:
+        use_cluster: True
+        memory: '5G'
+        num_cpus: 1
+        forced_dependencies: []
+        add_breakpoint: False
+        env_vars:
+            LD_LIBRARY_PATH: ('__SHARED__','ld_library_path')
+        boilerplate:
+        parallel_run: False
+        parallel_params: []
+        interval_file:
+    component:
+        input_files:
+            input: ('__TASK_SAMTOOLS_RMDUP__','output')
+        output_files:
+            output: 'results/${sample_id}_star_fixmate_sort_rmdup.flagstat'
+        parameters:
+__TASK_CUFFLINKS__:
+    reserved:
+        # do not change this section.
+        component_name: 'run_cufflinks'
+        component_version: '1.0.0'
+        seed_version: '2.1.1'
+    run:
+        use_cluster: True
+        memory: '4G'
+        num_cpus: 1
+        forced_dependencies: []
+        add_breakpoint: False
+        env_vars:
+            PATH: ('__SHARED__','cufflinks_bin')
+        boilerplate:
+    component:
+        input_files:
+            input: ('__TASK_SAMTOOLS_RMDUP__', 'output')
+            GTF_guide: 
+            mask_file: 
+            frag_bias_correct: ('__SHARED__', 'frag_bias_correct')
+        output_files:
+            output_dir: 'results/cufflinks/${sample_id}/'
+        parameters:
+            num_threads: 
+            seed: 
+            GTF: ('__SHARED__', 'gene_reference_annotation_gtf')
+            multi_read_correct: ('__SHARED__', 'multi_read_correct')
+            library_type: ('__SHARED__', 'library_type')
+            library_norm_method: 
+            frag_len_mean: 
+            frag_len_std_dev: 
+            max_mle_iterations: 
+            compatible_hits_norm: '__FLAG__'
+            total_hits_norm: True
+            num_frag_count_draws: 
+            num_frag_assign_draws: 
+            max_frag_multihits: 
+            no_effective_length_correction: '__FLAG__'
+            no_length_correction: '__FLAG__'
+            label: 
+            min_isoform_fraction: 
+            pre_mrna_fraction: 
+            max_intron_length: 
+            junc_alpha: 
+            small_anchor_fraction: 
+            min_frags_per_transfrag: 
+            overhang_tolerance: 
+            max_bundle_length: 
+            max_bundle_frags: 
+            min_intron_length: 
+            trim_3_avgcov_thresh: 
+            trim_3_dropoff_frac: 
+            max_multiread_fraction: 
+            overlap_radius: 
+            no_faux_reads: '__FLAG__'
+            3_overhang_tolerance: 
+            intron_overhang_tolerance: 
+            verbose: '__FLAG__'
+            quiet: '__FLAG__'
+            no_update_check: '__FLAG__'

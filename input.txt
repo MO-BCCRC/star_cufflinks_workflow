@@ -1,0 +1,2 @@
+#sample_id	fastq_reads
+<some_ID>	<["path/to/fastq_left", "path/to/fastq_right"]>

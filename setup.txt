@@ -1,0 +1,13 @@
+#section	key	value
+__GENERAL__	samtools	path to samtools executable
+__GENERAL__	star_binary	path to STAR executable
+__GENERAL__	star_fusion_binary	path to STAR-Fusion executable
+__SHARED__	library_type	name of a library type used by Cufflinks
+__SHARED__	perl5lib	path(s) to export to PERL5LIB env variable
+__SHARED__	gene_reference_star_fusion_cdna	path to cdna reference file made and used by SART-Fusion
+__SHARED__	cufflinks_bin	path to cufflinks bin directory
+__SHARED__	frag_bias_correct	path to reference fasta
+__SHARED__	multi_read_correct	True/False
+__SHARED__	gene_reference_annotation_gtf	reference annotation file in gtf format
+__SHARED__	star_genome_index_dir	path to the genom index directory made and used by STAR
+__SHARED__	ld_library_path	path(s) to export to LD_LIBRARY_PATH env variable
